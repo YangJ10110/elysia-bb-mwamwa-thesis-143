@@ -110,17 +110,15 @@ class CameraApp:
 
 
         
-        self.back_button = tk.Button(
-            self.root, 
-            text="Upload", 
-            command=self.upload_image, 
-            bg="#2196F3", 
-            fg="white", 
-            font=("Google Sans", 18, "bold")
-        )
         self.proceed_button.place(
             x=15, 
             y=940, 
+            width=570, 
+            height=70)
+
+        self.back_button.place(
+            x=15, 
+            y=855, 
             width=570, 
             height=70)
 
