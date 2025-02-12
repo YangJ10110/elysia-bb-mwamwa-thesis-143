@@ -146,3 +146,4 @@ if __name__ == "__main__":
     app = CameraApp(root)
     root.protocol("WM_DELETE_WINDOW", app.close_camera)
     root.mainloop()
+# comment
