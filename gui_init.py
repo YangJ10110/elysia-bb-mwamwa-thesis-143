@@ -33,19 +33,32 @@ class CameraApp:
         # Camera Feed
         # make the input camera fliiped (so it can be portrait without compressing the feed)
 
-        self.camera_label = tk.Label(self.root, width=600, height=800, bg="black")
-        self.camera_label.place(x=20, y=40)
+        self.camera_label = tk.Label(self.root, width=600, height=800, bg="black", bd=0)
+        self.camera_label.place(x=2.5, y=40)
 
         # Capture and Upload Buttons
         self.capture_button = tk.Button(
             self.root, text="Capture", command=self.capture_image, bg="#4CAF50", fg="white", font=("Open Sans", 14, "bold")
         )
-        self.capture_button.place(x=50, y=750, width=200, height=100)
+        self.capture_button.place(
+            x=15,
+            y=855,
+            width=570,
+            height=70)
 
         self.upload_button = tk.Button(
-            self.root, text="Upload", command=self.upload_image, bg="#2196F3", fg="white", font=("Open Sans", 14, "bold")
+            self.root, 
+            text="Upload", 
+            command=self.upload_image, 
+            bg="#2196F3", 
+            fg="white", 
+            font=("Open Sans", 14, "bold")
         )
-        self.upload_button.place(x=350, y=750, width=200, height=100)
+        self.upload_button.place(
+            x=15, 
+            y=940, 
+            width=570, 
+            height=70)
 
         self.cap = cv2.VideoCapture(0)
         self.update_camera_feed()
@@ -57,6 +70,7 @@ class CameraApp:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Rotate to portrait mode
                 # Resize the frame to fit the label
+                frame = cv2.resize(frame, (600, 800))
                 self.current_frame = ImageTk.PhotoImage(Image.fromarray(frame))
                 self.camera_label.config(image=self.current_frame)
                 self.root.after(10, self.update_camera_feed)
@@ -78,7 +92,6 @@ class CameraApp:
         self.clear_frame()
 
         image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(image, (600, 700))
         image = ImageTk.PhotoImage(Image.fromarray(image))
 
         self.image_label = tk.Label(self.root, image=image)
