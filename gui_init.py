@@ -4,20 +4,21 @@ from PIL import Image, ImageTk
 import cv2
 import json
 
-class CameraApp:
+class CameraApp: #Configurations for the camera app - start
     def __init__(self, root):
         self.root = root
-        self.root.overrideredirect(True)  # Remove title bar
-        self.root.geometry("468x800")  # Scaled down from 520x888
+        self.root.overrideredirect(True)  # Remove title bar, para hindi drag-able yung window
+        self.root.geometry("468x800")  #para sa size
         self.root.configure(bg="#171d29")
 
         self.current_frame = None
         self.captured_image = None
         self.filename = None
+# Configurations for the camera app until here
 
         self.create_initial_page()
 
-    def create_initial_page(self):
+    def create_initial_page(self): #function, pwede magconsume pa ng ibang functions
         self.clear_frame()
         self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 20, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
         self.exit_button.place(x=444, y=9, width=17, height=17)  # Scaled down from x=494, y=9, width=17, height=17
@@ -49,15 +50,15 @@ class CameraApp:
             height=50)  # Scaled down from x=13, y=815, width=494, height=61
 
         self.cap = cv2.VideoCapture(0)
-        self.update_camera_feed()
+        self.update_camera_feed() #eto yung camera, function siya
 
     def update_camera_feed(self):
         if self.cap.isOpened():
-            ret, frame = self.cap.read()
+            ret, frame = self.cap.read() #ret is a boolean, frame is the image
             if ret:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) #converts the color from BGR to RGB
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Rotate to portrait mode
-                frame = cv2.resize(frame, (468, 600))  # Scaled down from (503, 693)
+                frame = cv2.resize(frame, (468, 600))  # Scale mo yung image
                 self.current_frame = ImageTk.PhotoImage(Image.fromarray(frame))
                 self.camera_label.config(image=self.current_frame)
                 self.root.after(10, self.update_camera_feed)
