@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 import cv2
 import json
 
-class CameraApp: #Configurations for the camera app - start
+class CameraApp:
     def __init__(self, root):
         self.root = root
         self.root.overrideredirect(True)  # Remove title bar, para hindi drag-able yung window
@@ -14,7 +14,7 @@ class CameraApp: #Configurations for the camera app - start
         self.current_frame = None
         self.captured_image = None
         self.filename = None
-# Configurations for the camera app until here
+        # Configurations for the camera app until here
 
         self.create_initial_page()
 
@@ -49,14 +49,17 @@ class CameraApp: #Configurations for the camera app - start
             width=442, 
             height=50)  # Scaled down from x=13, y=815, width=494, height=61
 
-        self.cap = cv2.VideoCapture(0)
-        self.update_camera_feed() #eto yung camera, function siya
+        self.cap = cv2.VideoCapture(1)  # Try using camera index 1 for external webcam
+        if not self.cap.isOpened():
+            print("Error: Unable to access external webcam.")
+            self.cap = cv2.VideoCapture(0)  # Fallback to default webcam if external isn't available
+        self.update_camera_feed()
 
     def update_camera_feed(self):
         if self.cap.isOpened():
-            ret, frame = self.cap.read() #ret is a boolean, frame is the image
+            ret, frame = self.cap.read()  #ret is a boolean, frame is the image
             if ret:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) #converts the color from BGR to RGB
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  #converts the color from BGR to RGB
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Rotate to portrait mode
                 frame = cv2.resize(frame, (468, 600))  # Scale mo yung image
                 self.current_frame = ImageTk.PhotoImage(Image.fromarray(frame))
@@ -147,4 +150,3 @@ if __name__ == "__main__":
     app = CameraApp(root)
     root.protocol("WM_DELETE_WINDOW", app.close_camera)
     root.mainloop()
-# comment
