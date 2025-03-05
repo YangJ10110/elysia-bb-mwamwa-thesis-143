@@ -9,7 +9,8 @@ import ssl
 from email.message import EmailMessage
 import os
 from datetime import datetime
-
+from dotenv import load_dotenv
+load_dotenv()
 
 
 """
@@ -285,8 +286,9 @@ class CameraApp:
             return
         
         pdf_filename = self.generate_pdf()
-        sender_email = "jeromeyang21@gmail.com"
-        sender_password = "qnqa kfhi yoij iuzs"
+        sender_email=os.getenv("SENDER_EMAIL")
+        sender_password=os.getenv("SENDER_PASSWORD")
+
         # password is generated from the app password in gmail
         # REFRENCE: https://support.google.com/mail/answer/185833?hl=en
         # ENABLE 2-STEP VERIFICATION FIRST
