@@ -9,67 +9,53 @@ import json
 class CameraApp:
     def __init__(self, root):
         self.root = root
-<<<<<<< Updated upstream
-        self.root.overrideredirect(True)  # Remove title bar
-        self.root.geometry("600x1024")
-=======
         self.root.overrideredirect(False)  # Remove title bar
         self.root.geometry("1920x1080")  # Set to landscape
->>>>>>> Stashed changes
         self.root.configure(bg="#171d29")
         #center-top the window
 
         self.current_frame = None
         self.captured_image = None
         self.filename = None
-<<<<<<< Updated upstream
-=======
         self.patient_name = ""
         self.cap = None
->>>>>>> Stashed changes
 
-        self.create_initial_page()
-
+        self.create_patient_info_page()
 
 
-<<<<<<< Updated upstream
+
 
     def create_initial_page(self):
+        if hasattr(self, 'name_entry') and self.name_entry.winfo_exists():
+            self.patient_name = self.name_entry.get()
         self.clear_frame()
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 22, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=570, y=10, width=20, height=20)
-        # Camera Feed
-        # make the input camera fliiped (so it can be portrait without compressing the feed)
-
-        self.camera_label = tk.Label(self.root, width=600, height=800, bg="black", bd=0)
-        self.camera_label.place(x=2.5, y=40)
-
-        # Capture and Upload Buttons
+        
+        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button.place(x=1450, y=40, width=30, height=31)
+        
+        self.camera_label = tk.Label(self.root, width=720, height=860, bg="black", bd=0)
+        self.camera_label.place(x=20, y=1)
+        
         self.capture_button = tk.Button(
-            self.root, text="Capture", command=self.capture_image, bg="#4CAF50", fg="white", font=("Google Sans", 18, "bold")
+            self.root, text="Capture", command=self.capture_image, bg="#1a80e6", fg="white", font=("Google Sans", 20, "bold")
         )
-        self.capture_button.place(
-            x=15,
-            y=855,
-            width=570,
-            height=70)
-
+        self.capture_button.place(x=815, y=350, width=640, height=80)
+        
         self.upload_button = tk.Button(
-            self.root, 
-            text="Upload", 
-            command=self.upload_image, 
-            bg="#2196F3", 
-            fg="white", 
-            font=("Google Sans", 18, "bold")
+            self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 20, "bold")
         )
-        self.upload_button.place(
-            x=15, 
-            y=940, 
-            width=570, 
-            height=70)
+        self.upload_button.place(x=815, y=450, width=640, height=80)
+        
+        self.cap = cv2.VideoCapture(1)
+        if not self.cap.isOpened():
+            print("Error: Unable to access external webcam.")
+            self.cap = cv2.VideoCapture(1)
+        self.update_camera_feed()
 
-        self.cap = cv2.VideoCapture(0)
-=======
+
+    def create_patient_info_page(self):
+        self.clear_frame()
+
         self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
         self.exit_button.place(x=1450, y=40, width=30, height=31)
 
@@ -152,35 +138,7 @@ class CameraApp:
         if self.active_entry:
             self.active_entry.insert(tk.END, char)
     
-    def create_initial_page(self):
-        if self.name_entry.winfo_exists():
-            self.patient_name = self.name_entry.get()
-        self.clear_frame()
-        
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=1450, y=40, width=30, height=31)
-        
-        self.camera_label = tk.Label(self.root, width=720, height=860, bg="black", bd=0)
-        self.camera_label.place(x=20, y=1)
-        
-        self.capture_button = tk.Button(
-            self.root, text="Capture", command=self.capture_image, bg="#1a80e6", fg="white", font=("Google Sans", 20, "bold")
-        )
-        self.capture_button.place(x=815, y=350, width=640, height=80)
-        ##1a80e6
-        ##234679
-        
-        self.upload_button = tk.Button(
-            self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 20, "bold")
-        )
-        self.upload_button.place(x=815, y=450, width=640, height=80)
-        
-        self.cap = cv2.VideoCapture(1)
-        if not self.cap.isOpened():
-            print("Error: Unable to access external webcam.")
-            self.cap = cv2.VideoCapture(1)
->>>>>>> Stashed changes
-        self.update_camera_feed()
+
 
     def update_camera_feed(self):
         if self.cap.isOpened():
@@ -188,13 +146,7 @@ class CameraApp:
             if ret:
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-<<<<<<< Updated upstream
-                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)  # Rotate to portrait mode
-                # Resize the frame to fit the label
-                frame = cv2.resize(frame, (580, 800))
-=======
                 frame = cv2.resize(frame, (720, 960))
->>>>>>> Stashed changes
                 self.current_frame = ImageTk.PhotoImage(Image.fromarray(frame))
                 if self.camera_label.winfo_exists():
                     self.camera_label.config(image=self.current_frame)
@@ -220,39 +172,6 @@ class CameraApp:
 
     def show_preview_page(self):
         self.clear_frame()
-<<<<<<< Updated upstream
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 22, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=570, y=10, width=20, height=20)
-        image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
-        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-        image = cv2.resize(image, (600, 800))
-        image = ImageTk.PhotoImage(Image.fromarray(image))
-
-        self.image_label = tk.Label(self.root, image=image)
-        self.image_label.image = image
-        self.image_label.pack()
-        self.image_label.place(x=0, y=40)
-
-        self.back_button = tk.Button(self.root, text="Back", command=self.create_initial_page, font=("Google Sans", 12))
-
-
-        self.proceed_button = tk.Button(self.root, text="Proceed", command=self.show_result_page, font=("Google Sans", 12))
-
-
-        
-        self.proceed_button.place(
-            x=15, 
-            y=940, 
-            width=570, 
-            height=70)
-
-        self.back_button.place(
-            x=15, 
-            y=855, 
-            width=570, 
-            height=70)
-
-=======
         
         self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
         self.exit_button.place(x=1450, y=40, width=30, height=31)
@@ -286,7 +205,6 @@ class CameraApp:
 
         #self.upload_button.place(x=815, y=450, width=640, height=80)
     
->>>>>>> Stashed changes
     def show_result_page(self):
         self.clear_frame()
 
@@ -295,9 +213,7 @@ class CameraApp:
 
         self.result_image_label = tk.Label(self.root, image=resized_image)
         self.result_image_label.image = resized_image
-<<<<<<< Updated upstream
-        self.result_image_label.pack(pady=10)
-=======
+
         self.result_image_label.place(x=400, y=200)
         
         mock_data = {
@@ -339,7 +255,6 @@ class CameraApp:
         c.setFont("Helvetica", 20)
         c.drawString(100, 750, "Pneumonia Detection Report")
         c.setFont ("Helvetica", 14)
->>>>>>> Stashed changes
 
         mock_data = {
             "Pneumonia":"Yes",
@@ -355,8 +270,7 @@ class CameraApp:
         self.back_button = tk.Button(self.root, text="Back", command=self.create_initial_page, font=("Google Sans", 12))
         self.back_button.pack(pady=10)
 
-<<<<<<< Updated upstream
-=======
+
         return pdf_filename
     
     def send_email(self):
@@ -405,7 +319,6 @@ class CameraApp:
         tk.Button(self.root, text="Back to Patient Info", command=self.create_patient_info_page, bg="#234679", fg="white", font=("Google Sans", 16, "bold"), width=20).pack(pady=10)
     
     
->>>>>>> Stashed changes
     def clear_frame(self):
         for widget in self.root.winfo_children():
             widget.destroy()
