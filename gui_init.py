@@ -1,10 +1,16 @@
 import tkinter as tk
-from tkinter import filedialog, font
+from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import cv2
-import json
-#tkinter drag window
 
+from reportlab.pdfgen import canvas
+import smtplib
+import ssl
+from email.message import EmailMessage
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
 
 class CameraApp:
     def __init__(self, root):
@@ -254,22 +260,23 @@ class CameraApp:
         c = canvas.Canvas(pdf_filename)
         c.setFont("Helvetica", 20)
         c.drawString(100, 750, "Pneumonia Detection Report")
-        c.setFont ("Helvetica", 14)
+        c.setFont("Helvetica", 14)
 
         mock_data = {
-            "Pneumonia":"Yes",
+            "Patient Name": self.patient_name,
+            "Pneumonia": "Yes",
             "Classification": "Viral",
             "Confidence Level": "87%",
-            "NOTE": "It is recommended to consult a doctor for further validation of diagnosis"
+            "NOTE": "Consult a doctor for further validation."
         }
 
+        y_position = 700
         for key, value in mock_data.items():
-            label = tk.Label(self.root, text=f"{key}: {value}", font=("Google Sans", 14))
-            label.pack()
+            c.drawString(100, y_position, f"{key}: {value}")
+            y_position -= 30
 
-        self.back_button = tk.Button(self.root, text="Back", command=self.create_initial_page, font=("Google Sans", 12))
-        self.back_button.pack(pady=10)
-
+        c.save()
+        messagebox.showinfo("PDF Generated", "Pneumonia report saved as PDF.")
 
         return pdf_filename
     
@@ -307,6 +314,7 @@ class CameraApp:
             messagebox.showinfo("Success", "Email sent successfully.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to send email: {e}")
+    
     
     def send_to_doctor_page(self):
         self.clear_frame()
