@@ -11,11 +11,15 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from PyPDF2 import PdfReader, PdfWriter
+import tempfile
 
 class CameraApp:
     def __init__(self, root):
         self.root = root
-        self.root.overrideredirect(False)  # Remove title bar
+        self.root.overrideredirect(True)  # Remove title bar
         self.root.geometry("1920x1080")  # Set to landscape
         self.root.configure(bg="#171d29")
         #center-top the window
@@ -24,9 +28,23 @@ class CameraApp:
         self.captured_image = None
         self.filename = None
         self.patient_name = ""
+        self.normal_confidence = 0
+        self.viral_confidence = 0
+        self.bacterial_confidence = 0
+        self.age = 0
+        self.address = ""
+        self.contact = ""
+        self.sex = ""
+        self.active_entry = None
+        self.others_confidence = 0
+        self.priority_level = ""
         self.cap = None
+        self.image = None
 
         self.create_patient_info_page()
+        
+        # showing the result page immediately for testing
+        self.show_result_page()
 
 
 
@@ -34,6 +52,15 @@ class CameraApp:
     def create_initial_page(self):
         if hasattr(self, 'name_entry') and self.name_entry.winfo_exists():
             self.patient_name = self.name_entry.get()
+        if hasattr(self, 'age_entry') and self.age_entry.winfo_exists():
+            self.age = self.age_entry.get()
+        if hasattr(self, 'address_entry') and self.address_entry.winfo_exists():
+            self.address = self.address_entry.get()
+        if hasattr(self, 'contact_entry') and self.contact_entry.winfo_exists():
+            self.contact = self.contact_entry.get()
+        if hasattr(self, 'sex_entry') and self.sex_entry.winfo_exists():
+            self.sex = self.sex_entry.get()
+        
         self.clear_frame()
         
         self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
@@ -75,13 +102,18 @@ class CameraApp:
         self.name_entry.place(x=220, y=195)
         self.name_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.name_entry))
 
+
         self.age_entry = tk.Entry(self.root, font=("Google Sans", 26), width=3, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
         self.age_entry.place(x=895, y=195)
         self.age_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.age_entry))
+        self.age = self.age_entry.get() 
+        print(self.age)
 
         self.sex_entry = tk.Entry(self.root, font=("Google Sans", 26), width=3, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
         self.sex_entry.place(x=1085, y=195)
         self.sex_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.sex_entry))
+        self.sex = self.sex_entry.get()
+        print(self.sex)
 
         tk.Label(self.root, text="Address:", font=("Google Sans", 26), bg="#171d29", fg="white").place(x=220, y=270)
         tk.Label(self.root, text="Contact Number:", font=("Google Sans", 26), bg="#171d29", fg="white").place(x=885, y=270)
@@ -89,10 +121,14 @@ class CameraApp:
         self.address_entry = tk.Entry(self.root, font=("Google Sans", 26), width=20, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
         self.address_entry.place(x=220, y=315)
         self.address_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.address_entry))
+        self.address = self.address_entry.get()
+        print(self.address)
 
         self.contact_entry = tk.Entry(self.root, font=("Google Sans", 26), width=16, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
         self.contact_entry.place(x=895, y=315)
         self.contact_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.contact_entry))
+        self.contact = self.contact_entry.get()
+        print(self.contact)
 
         self.keyboard_frame = tk.Frame(self.root, bg="#171d29")
         self.keyboard_frame.place(x=220, y=410)
@@ -176,6 +212,15 @@ class CameraApp:
             self.captured_image = cv2.imread(self.filename)
             self.show_preview_page()
 
+    def image_preview_prepare(self):
+        if self.captured_image is not None:
+            self.image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
+            self.image = cv2.resize(self.image, (720, 860))
+            self.image = ImageTk.PhotoImage(Image.fromarray(self.image))
+        else:
+            self.image = ImageTk.PhotoImage(Image.new('RGB', (720, 860), 'black'))
+        return self.image
+
     def show_preview_page(self):
         self.clear_frame()
         
@@ -189,9 +234,9 @@ class CameraApp:
         # self.camera_label = tk.Label(self.root, width=720, height=860, bg="black", bd=0)
         # self.camera_label.place(x=20, y=1)
         
-        self.image_label = tk.Label(self.root, image=image, width=720, bg="black", height=860,bd=0)
+        self.image_label = tk.Label(self.root, image=image, width=720, bg="black", height=840,bd=0)
         self.image_label.image = image
-        self.image_label.place(x=20, y=1)
+        self.image_label.place(x=20, y=10)
         
         ##1a80e6
         ##234679
@@ -213,72 +258,171 @@ class CameraApp:
     
     def show_result_page(self):
         self.clear_frame()
-
-        resized_image = cv2.resize(self.captured_image, (300, 400))
-        resized_image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)))
-
-        self.result_image_label = tk.Label(self.root, image=resized_image)
-        self.result_image_label.image = resized_image
-
-        self.result_image_label.place(x=400, y=200)
+        self.patient_name = "Jerome"
+        self.sex = "M"
+        self.address = "Cebu City"
+        self.contact = "09123456789" 
+        self.age = "25"
+        self.normal_confidence_level = 87
+        self.viral_confidence_level = 13
+        self.bacterial_confidence_level = 0
+        self.priority_level = "Low"
+        self.others_confidence_level = 0
         
-        mock_data = {
+        result_title_label = tk.Label(self.root, text="Pneumonia Detection and Classification", font=("Google Sans", 25), bg="#171d29", fg="white")
+        result_title_label.place(x=700, y=30)
+
+        self.back_button = tk.Button (self.root, text="Back", command=self.create_initial_page, bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold"))
+        self.back_button.place(x=10, y=10, width=100, height=31)
+        #back button to camera
+        
+
+        # self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        # self.exit_button.place(x=1450, y=40, width=30, height=31)
+
+        if self.captured_image is not None:
+            resized_image = cv2.resize(self.captured_image, (700, 800))
+            resized_image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)))
+        else:
+            resized_image = ImageTk.PhotoImage(Image.new('RGB', (300, 400), 'black'))
+
+        
+        self.result_image_label = tk.Label(self.root, image=resized_image, width=460, bg="black", height=740)
+        self.result_image_label.image = resized_image
+        self.result_image_label.place(x=100, y=60)
+
+        #        self.image_label = tk.Label(self.root, image=image, width=720, bg="black", height=840,bd=0)
+        #        self.image_label.image = image
+        #        self.image_label.place(x=20, y=10)
+
+        patient_data = {
             "Patient Name": self.patient_name,
-            "Pneumonia": "Yes",
-            "Classification": "Viral",
-            "Confidence Level": "87%",
-            "NOTE": "Consult a doctor for further validation."
+            "Age": self.age,
+            "Sex": self.sex,
+            "Address": self.address,
+            "Contact Number": self.contact,
         }
         
-        y_position = 600
-        for key, value in mock_data.items():
-            label = tk.Label(self.root, text=f"{key}: {value}", font=("Google Sans", 14), bg="#171d29", fg="white")
-            label.place(x=500, y=y_position)
+        y_position = 120
+        for key, value in patient_data.items():
+            label = tk.Label(self.root, text=f"{key}: {value}", font=("Google Sans", 20), bg="#171d29", fg="white")
+            label.place(x=600, y=y_position)
             y_position += 40
+        
+        #line with color #234679
+
+        self.line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
+        self.second_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
+        self.third_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
+        self.fourth_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
+
+        self.line.place(x=600, y=320)
+        self.second_line.place(x=600, y=390)
+        self.third_line.place(x=600, y=460)
+        self.fourth_line.place(x=600, y=530)
+
+        self.normal_confidence_label = tk.Label(self.root, text=f"Normal:", font=("Google Sans", 20), bg="#171d29", fg="white")
+        self.normal_confidence_label.place(x=600, y=360)
+        self.normal_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.normal_confidence_level}%", font=("Google Sans", 20,"bold"), bg="#171d29", fg="white")
+        self.normal_confidence_level_label.place(x=850, y=360)
+
+
+        self.viral_confidence_label = tk.Label(self.root, text=f"Viral:", font=("Google Sans", 20), bg="#171d29", fg="white")
+        self.viral_confidence_label.place(x=600, y=430)
+        self.viral_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.viral_confidence_level}%", font=("Google Sans", 20,"bold"), bg="#171d29", fg="white")
+        self.viral_confidence_level_label.place(x=850, y=430)
+
+
+        self.bacterial_confidence_label = tk.Label(self.root, text=f"Bacterial:", font=("Google Sans", 20), bg="#171d29", fg="white")
+        self.bacterial_confidence_label.place(x=600, y=500)
+        self.bacterial_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.bacterial_confidence_level}%", font=("Google Sans", 20, "bold"), bg="#171d29", fg="white")
+        self.bacterial_confidence_level_label.place(x=850, y=500)
+
+        self.others_confidence_label = tk.Label(self.root, text=f"Others:", font=("Google Sans", 20), bg="#171d29", fg="white")
+        self.others_confidence_label.place(x=600, y=570)
+        self.others_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.others_confidence_level}%", font=("Google Sans", 20, "bold"), bg="#171d29", fg="white")
+        self.others_confidence_level_label.place(x=850, y=570)
+
+
+        self.priority_label = tk.Label(self.root, text=f"Priority Level:", font=("Google Sans", 23), bg="#1a345b", fg="white",bd=30)
+        self.priority_label.place(x=1200, y=650)
+
+        self.priority_level_label = tk.Label(self.root, text=f"{self.priority_level}", font=("Google Sans", 23, "bold"), bg="#1a345b", fg="white", bd=0, padx=10, pady=31, anchor="w")
+        self.priority_level_label.place(x=1420, y=650, width=120)
         
         # self.print_as_pdf_button = tk.Button(self.root, text="Back", command=self.create_initial_page, bg="##1a80e6", fg="white", font=("Google Sans", 16, "bold"))
         
-        self.print_as_pdf_button = tk.Button(self.root, text="Print as Pdf",command=self.generate_pdf , bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold"))
+        self.print_as_pdf_button = tk.Button(self.root, text="Print as Pdf",command=self.generate_pdf , bg="#1a80e6", fg="white", font=("Google Sans", 12, "bold"))
 
-        self.print_as_pdf_button.place(x=1000, y=200, width=240, height=60)
+        self.print_as_pdf_button.place(x=1250, y=120, width=200, height=50)
+        #         self.exit_button.place(x=1450, y=40, width=30, height=31)
 
-        self.send_to_doctor_button = tk.Button(self.root, text="Send to Doctor",command=self.send_to_doctor_page, bg="#234679", fg="white", font=("Google Sans", 16, "bold"))
 
-        self.send_to_doctor_button.place(x=1000, y=300, width=240, height=60)
+        self.send_to_doctor_button = tk.Button(self.root, text="Send to Doctor",command=self.send_to_doctor_page, bg="#234679", fg="white", font=("Google Sans", 12, "bold"))
+
+        self.send_to_doctor_button.place(x=1250, y=190, width=200, height=50)
 
         # #1a80e6
         # #234679
+
+
     def generate_pdf(self):
+                
         timestamp = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         directory = "C:/Documents/Generated_PDF/"
-        
-        # Ensure the directory exists before saving the file
         os.makedirs(directory, exist_ok=True)
 
-        pdf_filename = os.path.join(directory, f"{self.patient_name}_pneumonia_report_{timestamp}.pdf")
-        
-        c = canvas.Canvas(pdf_filename)
-        c.setFont("Helvetica", 20)
-        c.drawString(100, 750, "Pneumonia Detection Report")
-        c.setFont("Helvetica", 14)
+        template_path = "CHEST-RADIOGRAPH-TEMPLATE.pdf"
+        output_pdf_path = os.path.join(directory, f"{self.patient_name}_pneumonia_report_{timestamp}.pdf")
 
-        mock_data = {
-            "Patient Name": self.patient_name,
-            "Pneumonia": "Yes",
-            "Classification": "Viral",
-            "Confidence Level": "87%",
-            "NOTE": "Consult a doctor for further validation."
-        }
+        # Read the template PDF
+        template_reader = PdfReader(template_path)
+        output_writer = PdfWriter()
 
-        y_position = 700
-        for key, value in mock_data.items():
-            c.drawString(100, y_position, f"{key}: {value}")
-            y_position -= 30
+        # Create an overlay with reportlab
+        overlay_path = os.path.join(directory, "overlay.pdf")
+        overlay_canvas = canvas.Canvas(overlay_path, pagesize=letter)
 
-        c.save()
-        messagebox.showinfo("PDF Generated", "Pneumonia report saved as PDF.")
+        # Set patient details dynamically
+        overlay_canvas.setFont("Helvetica", 11)
+        overlay_canvas.drawString(250, 633, self.priority_level)
+        overlay_canvas.drawString(250, 560, self.patient_name)  # Name
+        overlay_canvas.drawString(250, 545, self.age)  # Age
+        overlay_canvas.drawString(250, 530, self.sex)  # Sex
+        overlay_canvas.drawString(250, 515, self.address)  # Address
+        overlay_canvas.drawString(250, 500, self.contact)  # Contact Number
+        # Set screening results
+        overlay_canvas.drawString(250, 190, "Normal")  # Viral
+        overlay_canvas.drawString(250, 170, "Viral")  # Bacterial 
+        overlay_canvas.drawString(250, 150, "Bacterial")  # Others
+        overlay_canvas.drawString(250, 130, "Others")  # Normal (example) 
 
-        return pdf_filename
+        if self.captured_image is not None:
+            temp_img = tempfile.NamedTemporaryFile(suffix=".png", delete=False)  # Create a temp image file
+            cv2.imwrite(temp_img.name, self.captured_image)  # Save the image
+            temp_img_path = temp_img.name  # Get the file path
+            temp_img.close()  # Close the file
+
+            # ✅ Pass the file path to drawImage() instead of the PhotoImage object
+            overlay_canvas.drawImage(temp_img_path, 210, 250, width=151.2, height=226.8)
+
+        overlay_canvas.save()
+
+        # Merge template and overlay
+        overlay_reader = PdfReader(overlay_path)
+        template_page = template_reader.pages[0]
+        template_page.merge_page(overlay_reader.pages[0])
+
+        output_writer.add_page(template_page)
+
+        with open(output_pdf_path, "wb") as output_pdf:
+            output_writer.write(output_pdf)
+
+        # Remove temporary overlay file
+        os.remove(overlay_path)
+
+        messagebox.showinfo("PDF Generated", f"Pneumonia report saved as {output_pdf_path}")
+        return output_pdf_path
     
     def send_email(self):
         receiver_email = self.email_entry.get()
