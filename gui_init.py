@@ -16,11 +16,15 @@ from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
 import tempfile
 
+
+# 1440
+
+# 810
 class CameraApp:
     def __init__(self, root):
         self.root = root
         self.root.overrideredirect(True)  # Remove title bar
-        self.root.geometry("1920x1080")  # Set to landscape
+        self.root.geometry("1100x800")  # Set to landscape
         self.root.configure(bg="#171d29")
         #center-top the window
 
@@ -44,7 +48,7 @@ class CameraApp:
         self.create_patient_info_page()
         
         # showing the result page immediately for testing
-        self.show_result_page()
+        # self.show_result_page()
 
 
 
@@ -63,21 +67,21 @@ class CameraApp:
         
         self.clear_frame()
         
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=1450, y=40, width=30, height=31)
+        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button.place(x=1131, y=31, width=24, height=24)
         
-        self.camera_label = tk.Label(self.root, width=720, height=860, bg="black", bd=0)
-        self.camera_label.place(x=20, y=1)
+        self.camera_label = tk.Label(self.root, width=562, height=671, bg="black", bd=0)
+        self.camera_label.place(x=16, y=1)
         
         self.capture_button = tk.Button(
-            self.root, text="Capture", command=self.capture_image, bg="#1a80e6", fg="white", font=("Google Sans", 20, "bold")
+            self.root, text="Capture", command=self.capture_image, bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold")
         )
-        self.capture_button.place(x=815, y=350, width=640, height=80)
+        self.capture_button.place(x=635, y=274, width=499, height=62)
         
         self.upload_button = tk.Button(
-            self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 20, "bold")
+            self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 16, "bold")
         )
-        self.upload_button.place(x=815, y=450, width=640, height=80)
+        self.upload_button.place(x=635, y=352, width=499, height=62)
         
         self.cap = cv2.VideoCapture(1)
         if not self.cap.isOpened():
@@ -89,61 +93,54 @@ class CameraApp:
     def create_patient_info_page(self):
         self.clear_frame()
 
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=1450, y=40, width=30, height=31)
+        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button.place(x=1131, y=31, width=24, height=24)
 
-        tk.Label(self.root, text="Hello!", font=("Google Sans", 50), bg="#171d29", fg="white").place(x=645, y=50)
+        tk.Label(self.root, text="Hello!", font=("Google Sans", 40), bg="#171d29", fg="white").place(x=503, y=40)
 
-        tk.Label(self.root, text="Patient's Name:", font=("Google Sans", 26), bg="#171d29", fg="white").place(x=220, y=150)
-        tk.Label(self.root, text="Age:", font=("Google Sans", 26), bg="#171d29", fg="white").place(x=895, y=150)
-        tk.Label(self.root, text="Sex:", font=("Google Sans", 26), bg="#171d29", fg="white").place(x=1085, y=150)
+        tk.Label(self.root, text="Patient's Name:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=172, y=118)
+        tk.Label(self.root, text="Age:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=697, y=118)
+        tk.Label(self.root, text="Sex:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=870, y=118)
 
-        self.name_entry = tk.Entry(self.root, font=("Google Sans", 26), width=20, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
-        self.name_entry.place(x=220, y=195)
+        self.name_entry = tk.Entry(self.root, font=("Google Sans", 20), width=16, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.name_entry.place(x=172, y=152)
         self.name_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.name_entry))
 
 
-        self.age_entry = tk.Entry(self.root, font=("Google Sans", 26), width=3, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
-        self.age_entry.place(x=895, y=195)
+        self.age_entry = tk.Entry(self.root, font=("Google Sans", 20), width=4, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.age_entry.place(x=697, y=152)
         self.age_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.age_entry))
         self.age = self.age_entry.get() 
         print(self.age)
 
-        self.sex_entry = tk.Entry(self.root, font=("Google Sans", 26), width=3, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
-        self.sex_entry.place(x=1085, y=195)
+        self.sex_entry = tk.Entry(self.root, font=("Google Sans", 20), width=4, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.sex_entry.place(x=870, y=152)
         self.sex_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.sex_entry))
         self.sex = self.sex_entry.get()
         print(self.sex)
 
-        tk.Label(self.root, text="Address:", font=("Google Sans", 26), bg="#171d29", fg="white").place(x=220, y=270)
-        tk.Label(self.root, text="Contact Number:", font=("Google Sans", 26), bg="#171d29", fg="white").place(x=885, y=270)
+        tk.Label(self.root, text="Address:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=172, y=211)
+        tk.Label(self.root, text="Contact Number:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=695, y=211)
 
-        self.address_entry = tk.Entry(self.root, font=("Google Sans", 26), width=20, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
-        self.address_entry.place(x=220, y=315)
+        self.address_entry = tk.Entry(self.root, font=("Google Sans", 20), width=16, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.address_entry.place(x=172, y=246)
         self.address_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.address_entry))
         self.address = self.address_entry.get()
         print(self.address)
 
-        self.contact_entry = tk.Entry(self.root, font=("Google Sans", 26), width=16, relief="flat", highlightthickness=1, highlightbackground="gray", bd=10)
-        self.contact_entry.place(x=895, y=315)
+        self.contact_entry = tk.Entry(self.root, font=("Google Sans", 20), width=14, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.contact_entry.place(x=697, y=246)
         self.contact_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.contact_entry))
         self.contact = self.contact_entry.get()
         print(self.contact)
 
         self.keyboard_frame = tk.Frame(self.root, bg="#171d29")
-        self.keyboard_frame.place(x=220, y=410)
+        self.keyboard_frame.place(x=165, y=320)
         self.create_keyboard()
 
 
-        self.done_button = tk.Button(self.root, text="Done", command=self.create_initial_page, bg="#4CAF50", fg="white", font=("Google Sans", 20, "bold"))
-        # # Add logo image
-        # logo_image = Image.open("CheXray_Colored.png")
-        # logo_image = logo_image.resize((200, 200), Image.LANCZOS)
-        # self.logo_photo = ImageTk.PhotoImage(logo_image)
-        # self.logo_label = tk.Label(self.root, image=self.logo_photo, bg="#171d29")
-        # self.logo_label.place(x=10, y=10)
-
-        self.done_button.place(x=1040, y=700, width=250, height=105)
+        self.done_button = tk.Button(self.root, text="Done", command=self.create_initial_page, bg="#4CAF50", fg="white", font=("Google Sans", 16, "bold"))
+        self.done_button.place(x=765, y=460, width=194, height=82)
     
     def create_keyboard(self):
         keys = [
@@ -155,15 +152,15 @@ class CameraApp:
         
         for row_index, row in enumerate(keys):
             for col_index, key in enumerate(row):
-                button = tk.Button(self.keyboard_frame, text=key, font=("Google Sans", 16), width=6, height=3,
+                button = tk.Button(self.keyboard_frame, text=key, font=("Google Sans", 12), width=6, height=2,
                                    command=lambda k=key: self.insert_character(k))
                 button.grid(row=row_index, column=col_index)
                 
-        backspace_button = tk.Button(self.keyboard_frame, text="Backspace", font=("Google Sans", 16), width=20, height=3, command=self.backspace_character)
-        backspace_button.grid(row=0, column=10, columnspan=10)
+        backspace_button = tk.Button(self.keyboard_frame, text="Backspace", font=("Google Sans", 12), width=16, height=2, command=self.backspace_character)
+        backspace_button.grid(row=0, column=16, columnspan=16)
 
-        space_button = tk.Button(self.keyboard_frame, text="Space", font=("Google Sans", 16), width=20, height=3, command=lambda: self.insert_character(" "))
-        space_button.grid(row=1, column=10, columnspan=10)
+        space_button = tk.Button(self.keyboard_frame, text="Space", font=("Google Sans", 12), width=16, height=2, command=lambda: self.insert_character(" "))
+        space_button.grid(row=1, column=16, columnspan=16)
     
     def backspace_character(self):
         if self.active_entry:
@@ -179,7 +176,6 @@ class CameraApp:
         """ Insert character into the active entry field. """
         if self.active_entry:
             self.active_entry.insert(tk.END, char)
-    
 
 
     def update_camera_feed(self):
