@@ -73,13 +73,13 @@ class CameraApp:
 
 
     def classify_pneumonia(self):
-        # ✅ DEVICE CONFIGURATION
+        # DEVICE CONFIGURATION
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # ✅ LOAD ViT MODEL (Fine-Tuning Enabled)
+        # LOAD ViT MODEL
         vit_model_name = "facebook/dino-vits16"
         vit_processor = ViTImageProcessor.from_pretrained(vit_model_name)
-        vit_model = ViTForImageClassification.from_pretrained(vit_model_name, num_labels=3).to(device)
+        vit_model = ViTForImageClassification.from_pretrained(vit_model_name, num_labels=4).to(device)
 
         def vit_forward(image_batch):
             def process_images(images):
@@ -92,11 +92,11 @@ class CameraApp:
 
             return tf.py_function(func=process_images, inp=[image_batch], Tout=tf.float32)
 
-        # ✅ LOAD VGG MODEL (Frozen Backbone)
+        # LOAD VGG MODEL
         vgg_base = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
         vgg_model = Model(inputs=vgg_base.input, outputs=Flatten()(vgg_base.output))
 
-        # ✅ HYBRID MODEL CLASS
+        # HYBRID MODEL CLASS
         class HybridModel(Model):
             def __init__(self, vgg_model, vit_forward, **kwargs):
                 super(HybridModel, self).__init__(**kwargs)
@@ -104,38 +104,38 @@ class CameraApp:
                 self.vgg_fc = Dense(512, activation="relu")
                 self.vit_forward = vit_forward
                 self.vit_fc = Dense(512, activation="relu")
-                self.fc = Dense(3, activation="softmax")
+                self.fc = Dense(4, activation="softmax")
 
             def call(self, inputs, training=False):
                 vgg_features = self.vgg_model(inputs)
                 vgg_features = self.vgg_fc(vgg_features)
                 vit_features = self.vit_forward(inputs)
-                vit_features = tf.reshape(vit_features, (-1, 3))
+                vit_features = tf.reshape(vit_features, (-1, 4))
                 vit_features = self.vit_fc(vit_features)
                 merged_features = (vgg_features + vit_features) / 2
                 return self.fc(merged_features)
 
-        # ✅ RECREATE MODEL
+        # RECREATE MODEL
         hybrid_model = HybridModel(vgg_model, vit_forward)
 
-        # ✅ INITIALIZE MODEL
+        # INITIALIZE MODEL
         dummy_input = tf.random.normal((1, 224, 224, 3))
         _ = hybrid_model(dummy_input)
         hybrid_model.build(input_shape=(None, 224, 224, 3))
 
-        # ✅ LOAD WEIGHTS
+        # LOAD WEIGHTS
         hybrid_model.load_weights(self.weights_path)
         print("\n✅ Model loaded successfully!")
 
-        # ✅ DEFINE CLASS LABELS
-        class_labels = {1: "Normal", 0: "Bacterial Pneumonia", 2: "Viral Pneumonia"}
+        # DEFINE CLASS LABELS
+        class_labels = {0: "Bacterial Pneumonia", 1: "Normal", 2: "Other Pathological Findings", 3: "Viral Pneumonia"}
 
         def preprocess_image(cv_image):
             img = cv2.resize(cv_image, (224, 224))
             img_array = np.expand_dims(img, axis=0) / 255.0
             return img_array
 
-        # ✅ PREDICTION
+        # PREDICTION
         img_array = preprocess_image(self.captured_image)
         predictions = hybrid_model.predict(img_array)
         class_probs = predictions[0]
@@ -144,7 +144,8 @@ class CameraApp:
         # Extract confidence levels
         normal_confidence = class_probs[1]
         bacterial_confidence = class_probs[0]
-        viral_confidence = class_probs[2]
+        viral_confidence = class_probs[3]
+        other_confidence = class_probs[2]
 
         print("\n📊 Classification Confidence Levels:")
         for idx, label in class_labels.items():
@@ -153,7 +154,7 @@ class CameraApp:
         final_prediction = f"\n✅ Final Prediction: {class_labels[class_index]} with {class_probs[class_index] * 100:.2f}% confidence.\n"
         print(final_prediction)
 
-        return class_labels[class_index], normal_confidence, bacterial_confidence, viral_confidence
+        return class_labels[class_index], normal_confidence, bacterial_confidence, viral_confidence, other_confidence
 
 
 
@@ -405,17 +406,16 @@ class CameraApp:
         self.clear_frame()
         
         # Classify the captured image
-        classification_result, self.normal_confidence, self.bacterial_confidence, self.viral_confidence = self.classify_pneumonia()
+        classification_result, self.normal_confidence, self.bacterial_confidence, self.viral_confidence, self.others_confidence = self.classify_pneumonia()
         
         # Convert confidence levels to percentages
         self.normal_confidence_level = self.normal_confidence * 100
         self.viral_confidence_level = self.viral_confidence * 100
         self.bacterial_confidence_level = self.bacterial_confidence * 100
+        self.others_confidence_level = self.others_confidence * 100
 
         # You can define logic to set priority level based on confidence scores
         self.priority_level = "Low"  # Modify this logic if needed
-        self.others_confidence_level = 100 - (self.normal_confidence_level + self.viral_confidence_level + self.bacterial_confidence_level)
-
 
 
         
