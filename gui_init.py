@@ -16,6 +16,17 @@ from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
 import tempfile
 
+original_width, original_height = 1080, 1920
+scale_steps = 50
+scale_factor = 0.02  # 5% decrease per step
+
+scaled_sizes = [
+    (int(original_width * (1 - scale_factor * step)), 
+     int(original_height * (1 - scale_factor * step)))
+    for step in range(scale_steps + 1)
+]
+
+print(scaled_sizes)
 
 # 1440
 
@@ -63,7 +74,7 @@ class CameraApp:
         tk.Label(self.root, text="Age:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=697, y=118)
         tk.Label(self.root, text="Sex:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=870, y=118)
 
-        self.name_entry = tk.Entry(self.root, font=("Google Sans", 20), width=16, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.name_entry = tk.Entry(self.root, font=("Google Sans", 20), width=25, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
         self.name_entry.place(x=172, y=152)
         self.name_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.name_entry))
 
@@ -83,7 +94,7 @@ class CameraApp:
         tk.Label(self.root, text="Address:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=172, y=211)
         tk.Label(self.root, text="Contact Number:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=695, y=211)
 
-        self.address_entry = tk.Entry(self.root, font=("Google Sans", 20), width=16, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.address_entry = tk.Entry(self.root, font=("Google Sans", 20), width=25, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
         self.address_entry.place(x=172, y=246)
         self.address_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.address_entry))
         self.address = self.address_entry.get()
@@ -267,42 +278,39 @@ class CameraApp:
     
     def show_result_page(self):
         self.clear_frame()
-        self.patient_name = "Jerome"
-        self.sex = "M"
-        self.address = "Cebu City"
-        self.contact = "09123456789" 
-        self.age = "25"
+        # self.patient_name = self.
+        # self.sex = "M"
+        # self.address = "Cebu City"
+        # self.contact = "09123456789" 
+        # self.age = "25"
         self.normal_confidence_level = 87
         self.viral_confidence_level = 13
         self.bacterial_confidence_level = 0
         self.priority_level = "Low"
         self.others_confidence_level = 0
         
-        result_title_label = tk.Label(self.root, text="Pneumonia Detection and Classification", font=("Google Sans", 25), bg="#171d29", fg="white")
-        result_title_label.place(x=700, y=30)
+        result_title_label = tk.Label(self.root, text="Pneumonia Detection and Classification", font=("Google Sans", 18), bg="#171d29", fg="white")
+        result_title_label.place(x=490, y=21)
 
-        self.back_button = tk.Button (self.root, text="Back", command=self.create_initial_page, bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold"))
-        self.back_button.place(x=10, y=10, width=100, height=31)
-        #back button to camera
-        
-
-        # self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        # self.exit_button.place(x=1450, y=40, width=30, height=31)
+        self.back_button = tk.Button (self.root, text="Back", command=self.create_initial_page, bg="#1a80e6", fg="white", font=("Google Sans", 12, "bold"))
+        self.back_button.place(x=7, y=7, width=70, height=22)
 
         if self.captured_image is not None:
-            resized_image = cv2.resize(self.captured_image, (700, 800))
+            resized_image = cv2.resize(self.captured_image, (400, 537))
             resized_image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)))
         else:
-            resized_image = ImageTk.PhotoImage(Image.new('RGB', (300, 400), 'black'))
+            resized_image = ImageTk.PhotoImage(Image.new('RGB', (216, 288), 'black'))
 
+        # image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
+        # image = cv2.resize(image, (515, 615))  # Scaled up by 10%
+        # image = ImageTk.PhotoImage(Image.fromarray(image))
         
-        self.result_image_label = tk.Label(self.root, image=resized_image, width=460, bg="black", height=740)
+        # self.image_label = tk.Label(self.root, image=image, width=515, bg="black", height=600, bd=0)  # Scaled up by 10%
+        # self.image_label.image = image
+        # self.image_label.place(x=10, y=5)
+        self.result_image_label = tk.Label(self.root, image=resized_image, width=312, bg="black", height=537)
         self.result_image_label.image = resized_image
-        self.result_image_label.place(x=100, y=60)
-
-        #        self.image_label = tk.Label(self.root, image=image, width=720, bg="black", height=840,bd=0)
-        #        self.image_label.image = image
-        #        self.image_label.place(x=20, y=10)
+        self.result_image_label.place(x=70, y=42)
 
         patient_data = {
             "Patient Name": self.patient_name,
@@ -312,67 +320,53 @@ class CameraApp:
             "Contact Number": self.contact,
         }
         
-        y_position = 120
+        y_position = 84
         for key, value in patient_data.items():
-            label = tk.Label(self.root, text=f"{key}: {value}", font=("Google Sans", 20), bg="#171d29", fg="white")
-            label.place(x=600, y=y_position)
-            y_position += 40
+            label = tk.Label(self.root, text=f"{key}: {value}", font=("Google Sans", 14), bg="#171d29", fg="white")
+            label.place(x=420, y=y_position)
+            y_position += 28
         
-        #line with color #234679
+        self.line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 10), bg="#171d29", fg="#234679")
+        self.second_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 10), bg="#171d29", fg="#234679")
+        self.third_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 10), bg="#171d29", fg="#234679")
+        self.fourth_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 10), bg="#171d29", fg="#234679")
 
-        self.line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
-        self.second_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
-        self.third_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
-        self.fourth_line = tk.Label(self.root, text="_____________________________________________________________________________________________", font=("Google Sans", 14), bg="#171d29", fg="#234679")
+        self.line.place(x=420, y=224)
+        self.second_line.place(x=420, y=273)
+        self.third_line.place(x=420, y=322)
+        self.fourth_line.place(x=420, y=371)
 
-        self.line.place(x=600, y=320)
-        self.second_line.place(x=600, y=390)
-        self.third_line.place(x=600, y=460)
-        self.fourth_line.place(x=600, y=530)
+        self.normal_confidence_label = tk.Label(self.root, text=f"Normal:", font=("Google Sans", 14), bg="#171d29", fg="white")
+        self.normal_confidence_label.place(x=420, y=252)
+        self.normal_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.normal_confidence_level}%", font=("Google Sans", 14, "bold"), bg="#171d29", fg="white")
+        self.normal_confidence_level_label.place(x=595, y=252)
 
-        self.normal_confidence_label = tk.Label(self.root, text=f"Normal:", font=("Google Sans", 20), bg="#171d29", fg="white")
-        self.normal_confidence_label.place(x=600, y=360)
-        self.normal_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.normal_confidence_level}%", font=("Google Sans", 20,"bold"), bg="#171d29", fg="white")
-        self.normal_confidence_level_label.place(x=850, y=360)
+        self.viral_confidence_label = tk.Label(self.root, text=f"Viral:", font=("Google Sans", 14), bg="#171d29", fg="white")
+        self.viral_confidence_label.place(x=420, y=301)
+        self.viral_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.viral_confidence_level}%", font=("Google Sans", 14, "bold"), bg="#171d29", fg="white")
+        self.viral_confidence_level_label.place(x=595, y=301)
 
+        self.bacterial_confidence_label = tk.Label(self.root, text=f"Bacterial:", font=("Google Sans", 14), bg="#171d29", fg="white")
+        self.bacterial_confidence_label.place(x=420, y=350)
+        self.bacterial_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.bacterial_confidence_level}%", font=("Google Sans", 14, "bold"), bg="#171d29", fg="white")
+        self.bacterial_confidence_level_label.place(x=595, y=350)
 
-        self.viral_confidence_label = tk.Label(self.root, text=f"Viral:", font=("Google Sans", 20), bg="#171d29", fg="white")
-        self.viral_confidence_label.place(x=600, y=430)
-        self.viral_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.viral_confidence_level}%", font=("Google Sans", 20,"bold"), bg="#171d29", fg="white")
-        self.viral_confidence_level_label.place(x=850, y=430)
+        self.others_confidence_label = tk.Label(self.root, text=f"Others:", font=("Google Sans", 14), bg="#171d29", fg="white")
+        self.others_confidence_label.place(x=420, y=399)
+        self.others_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.others_confidence_level}%", font=("Google Sans", 14, "bold"), bg="#171d29", fg="white")
+        self.others_confidence_level_label.place(x=595, y=399)
 
+        self.priority_label = tk.Label(self.root, text=f"Priority Level:", font=("Google Sans", 16), bg="#1a345b", fg="white", bd=21)
+        self.priority_label.place(x=840, y=455)
 
-        self.bacterial_confidence_label = tk.Label(self.root, text=f"Bacterial:", font=("Google Sans", 20), bg="#171d29", fg="white")
-        self.bacterial_confidence_label.place(x=600, y=500)
-        self.bacterial_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.bacterial_confidence_level}%", font=("Google Sans", 20, "bold"), bg="#171d29", fg="white")
-        self.bacterial_confidence_level_label.place(x=850, y=500)
+        self.priority_level_label = tk.Label(self.root, text=f"{self.priority_level}", font=("Google Sans", 16, "bold"), bg="#1a345b", fg="white", bd=0, padx=7, pady=22, anchor="w")
+        self.priority_level_label.place(x=994, y=455, width=84)
 
-        self.others_confidence_label = tk.Label(self.root, text=f"Others:", font=("Google Sans", 20), bg="#171d29", fg="white")
-        self.others_confidence_label.place(x=600, y=570)
-        self.others_confidence_level_label = tk.Label(self.root, text=f"Confidence Level: {self.others_confidence_level}%", font=("Google Sans", 20, "bold"), bg="#171d29", fg="white")
-        self.others_confidence_level_label.place(x=850, y=570)
+        self.print_as_pdf_button = tk.Button(self.root, text="Print as Pdf", command=self.generate_pdf, bg="#1a80e6", fg="white", font=("Google Sans", 8, "bold"))
+        self.print_as_pdf_button.place(x=875, y=84, width=140, height=35)
 
-
-        self.priority_label = tk.Label(self.root, text=f"Priority Level:", font=("Google Sans", 23), bg="#1a345b", fg="white",bd=30)
-        self.priority_label.place(x=1200, y=650)
-
-        self.priority_level_label = tk.Label(self.root, text=f"{self.priority_level}", font=("Google Sans", 23, "bold"), bg="#1a345b", fg="white", bd=0, padx=10, pady=31, anchor="w")
-        self.priority_level_label.place(x=1420, y=650, width=120)
-        
-        # self.print_as_pdf_button = tk.Button(self.root, text="Back", command=self.create_initial_page, bg="##1a80e6", fg="white", font=("Google Sans", 16, "bold"))
-        
-        self.print_as_pdf_button = tk.Button(self.root, text="Print as Pdf",command=self.generate_pdf , bg="#1a80e6", fg="white", font=("Google Sans", 12, "bold"))
-
-        self.print_as_pdf_button.place(x=1250, y=120, width=200, height=50)
-        #         self.exit_button.place(x=930, y=31, width=24, height=24)
-
-
-        self.send_to_doctor_button = tk.Button(self.root, text="Send to Doctor",command=self.send_to_doctor_page, bg="#234679", fg="white", font=("Google Sans", 12, "bold"))
-
-        self.send_to_doctor_button.place(x=1250, y=190, width=200, height=50)
-
-        # #1a80e6
-        # #234679
+        self.send_to_doctor_button = tk.Button(self.root, text="Send to Doctor", command=self.send_to_doctor_page, bg="#234679", fg="white", font=("Google Sans", 8, "bold"))
+        self.send_to_doctor_button.place(x=875, y=133, width=140, height=35)
 
 
     def generate_pdf(self):
@@ -475,11 +469,14 @@ class CameraApp:
         tk.Label(self.root, text="Enter the radiology department’s email address:", font=("Google Sans", 14), bg="#171d29", fg="white").pack(pady=10)
         self.email_entry = tk.Entry(self.root, font=("Google Sans", 14), width=40)
         self.email_entry.pack(pady=10)
+        self.set_active_entry(self.email_entry)
         
         tk.Button(self.root, text="Send to Doctor", command=self.send_email, bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold"), width=20).pack(pady=10)
         tk.Button(self.root, text="Back to Patient Info", command=self.create_patient_info_page, bg="#234679", fg="white", font=("Google Sans", 16, "bold"), width=20).pack(pady=10)
-    
-    
+        
+        self.keyboard_frame = tk.Frame(self.root, bg="#171d29")
+        self.keyboard_frame.pack(pady=20)
+        self.create_keyboard()
     def clear_frame(self):
         for widget in self.root.winfo_children():
             widget.destroy()
