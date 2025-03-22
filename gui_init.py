@@ -51,45 +51,6 @@ class CameraApp:
         # self.show_result_page()
 
 
-
-
-    def create_initial_page(self):
-        if hasattr(self, 'name_entry') and self.name_entry.winfo_exists():
-            self.patient_name = self.name_entry.get()
-        if hasattr(self, 'age_entry') and self.age_entry.winfo_exists():
-            self.age = self.age_entry.get()
-        if hasattr(self, 'address_entry') and self.address_entry.winfo_exists():
-            self.address = self.address_entry.get()
-        if hasattr(self, 'contact_entry') and self.contact_entry.winfo_exists():
-            self.contact = self.contact_entry.get()
-        if hasattr(self, 'sex_entry') and self.sex_entry.winfo_exists():
-            self.sex = self.sex_entry.get()
-        
-        self.clear_frame()
-        
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=1131, y=31, width=24, height=24)
-        
-        self.camera_label = tk.Label(self.root, width=562, height=671, bg="black", bd=0)
-        self.camera_label.place(x=16, y=1)
-        
-        self.capture_button = tk.Button(
-            self.root, text="Capture", command=self.capture_image, bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold")
-        )
-        self.capture_button.place(x=635, y=274, width=499, height=62)
-        
-        self.upload_button = tk.Button(
-            self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 16, "bold")
-        )
-        self.upload_button.place(x=635, y=352, width=499, height=62)
-        
-        self.cap = cv2.VideoCapture(1)
-        if not self.cap.isOpened():
-            print("Error: Unable to access external webcam.")
-            self.cap = cv2.VideoCapture(1)
-        self.update_camera_feed()
-
-
     def create_patient_info_page(self):
         self.clear_frame()
 
@@ -178,17 +139,6 @@ class CameraApp:
             self.active_entry.insert(tk.END, char)
 
 
-    def update_camera_feed(self):
-        if self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if ret:
-                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame = cv2.resize(frame, (720, 960))
-                self.current_frame = ImageTk.PhotoImage(Image.fromarray(frame))
-                if self.camera_label.winfo_exists():
-                    self.camera_label.config(image=self.current_frame)
-                self.root.after(10, self.update_camera_feed)
 
     def capture_image(self):
         if self.cap.isOpened():
@@ -199,8 +149,6 @@ class CameraApp:
                 self.cap.release()
                 self.show_preview_page()
                 
-    
-            
 
     def upload_image(self):
         self.filename = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.png *.jpeg")])
@@ -216,41 +164,106 @@ class CameraApp:
         else:
             self.image = ImageTk.PhotoImage(Image.new('RGB', (720, 860), 'black'))
         return self.image
+    
+
+    def update_camera_feed(self):
+        if self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret:
+                # Rotate frame to portrait orientation
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
+                # Convert frame to RGB
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                # Get original aspect ratio (portrait mode)
+                # original_h, original_w = frame.shape[:2]  # 1080x1920 becomes 1920x1080 after rotation
+
+                # # Target display size (modify these based on your UI dimensions)
+                # target_w, target_h = 720, 960
+
+                # # Calculate the scaling factor
+                # scale_factor = min(target_w / original_w, target_h / original_h)
+
+                # # Compute new dimensions while maintaining aspect ratio
+                # new_w = int(original_w * scale_factor)
+                # new_h = int(original_h * scale_factor)
+                #(515, 615)
+
+                # Resize while keeping aspect ratio
+                # frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+                frame = cv2.resize(frame, (515, 615), interpolation=cv2.INTER_LINEAR)
+
+
+                # Convert frame for tkinter
+                self.current_frame = ImageTk.PhotoImage(Image.fromarray(frame))
+
+                # Ensure the label exists before updating
+                if self.camera_label.winfo_exists():
+                    self.camera_label.config(image=self.current_frame)
+
+                # Schedule next frame update
+                self.root.after(10, self.update_camera_feed)
+
+    def create_initial_page(self):
+        if hasattr(self, 'name_entry') and self.name_entry.winfo_exists():
+            self.patient_name = self.name_entry.get()
+        if hasattr(self, 'age_entry') and self.age_entry.winfo_exists():
+            self.age = self.age_entry.get()
+        if hasattr(self, 'address_entry') and self.address_entry.winfo_exists():
+            self.address = self.address_entry.get()
+        if hasattr(self, 'contact_entry') and self.contact_entry.winfo_exists():
+            self.contact = self.contact_entry.get()
+        if hasattr(self, 'sex_entry') and self.sex_entry.winfo_exists():
+            self.sex = self.sex_entry.get()
+        
+        self.clear_frame()
+        
+        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button.place(x=1030, y=31, width=24, height=24)
+        
+        self.camera_label = tk.Label(self.root, width=515, height=600, bg="black", bd=0)
+        self.camera_label.place(x=10, y=5)
+        
+        self.capture_button = tk.Button(
+            self.root, text="Capture", command=self.capture_image, bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold")
+        )
+        self.capture_button.place(x=550, y=250, width=499, height=62)
+        
+        self.upload_button = tk.Button(
+            self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 16, "bold")
+        )
+        self.upload_button.place(x=550, y=320, width=499, height=62)
+        
+        self.cap = cv2.VideoCapture(1)
+        if not self.cap.isOpened():
+            print("Error: Unable to access external webcam.")
+            self.cap = cv2.VideoCapture(1)
+        self.update_camera_feed()
 
     def show_preview_page(self):
         self.clear_frame()
         
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=890, y=40, width=30, height=31)
+        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button.place(x=1030, y=31, width=24, height=24)
         
         image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(image, (720, 860))
+        image = cv2.resize(image, (515, 615))  # Scaled up by 10%
         image = ImageTk.PhotoImage(Image.fromarray(image))
         
-        # self.camera_label = tk.Label(self.root, width=720, height=860, bg="black", bd=0)
-        # self.camera_label.place(x=20, y=1)
-        
-        self.image_label = tk.Label(self.root, image=image, width=720, bg="black", height=840,bd=0)
+        self.image_label = tk.Label(self.root, image=image, width=515, bg="black", height=600, bd=0)  # Scaled up by 10%
         self.image_label.image = image
-        self.image_label.place(x=20, y=10)
+        self.image_label.place(x=10, y=5)
         
-        ##1a80e6
-        ##234679
-
         self.proceed_button = tk.Button(
-            self.root, text="Process", command=self.show_result_page, bg="#1a80e6", fg="white", font=("Google Sans", 20, "bold")
+            self.root, text="Process", command=self.show_result_page, bg="#1a80e6", fg="white", font=("Google Sans", 16, "bold")
         )
-        #font=("Google Sans", 20, "bold"
-        self.proceed_button.place(x=815, y=350, width=640, height=80)
-        #        self.capture_button.place(x=815, y=350, width=640, height=80)
-
+        self.proceed_button.place(x=550, y=250, width=499, height=62)  # Scaled up by 10%
         
         self.retake_button = tk.Button(
-            self.root, text="Retake Photo", command=self.create_initial_page, bg="#234679", fg="white", font=("Google Sans", 20, "bold")
+            self.root, text="Retake Photo", command=self.create_initial_page, bg="#234679", fg="white", font=("Google Sans", 16, "bold")
         )
-        self.retake_button.place(x=815, y=450, width=640, height=80)
-
-        #self.upload_button.place(x=815, y=450, width=640, height=80)
+        self.retake_button.place(x=550, y=320, width=499, height=62)  # Scaled up by 10%
     
     def show_result_page(self):
         self.clear_frame()
@@ -351,7 +364,7 @@ class CameraApp:
         self.print_as_pdf_button = tk.Button(self.root, text="Print as Pdf",command=self.generate_pdf , bg="#1a80e6", fg="white", font=("Google Sans", 12, "bold"))
 
         self.print_as_pdf_button.place(x=1250, y=120, width=200, height=50)
-        #         self.exit_button.place(x=1450, y=40, width=30, height=31)
+        #         self.exit_button.place(x=930, y=31, width=24, height=24)
 
 
         self.send_to_doctor_button = tk.Button(self.root, text="Send to Doctor",command=self.send_to_doctor_page, bg="#234679", fg="white", font=("Google Sans", 12, "bold"))
