@@ -94,7 +94,7 @@ class CameraApp:
         self.clear_frame()
 
         self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=1131, y=31, width=24, height=24)
+        self.exit_button.place(x=930, y=31, width=24, height=24)
 
         tk.Label(self.root, text="Hello!", font=("Google Sans", 40), bg="#171d29", fg="white").place(x=503, y=40)
 
@@ -221,7 +221,7 @@ class CameraApp:
         self.clear_frame()
         
         self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 30, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
-        self.exit_button.place(x=1450, y=40, width=30, height=31)
+        self.exit_button.place(x=890, y=40, width=30, height=31)
         
         image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
         image = cv2.resize(image, (720, 860))
