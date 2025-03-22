@@ -119,7 +119,8 @@ class CameraApp:
             "1234567890",
             "QWERTYUIOP",
             "ASDFGHJKL",
-            "ZXCVBNÑM"
+            "ZXCVBNÑM",
+            "._-@"
         ]
         
         for row_index, row in enumerate(keys):
