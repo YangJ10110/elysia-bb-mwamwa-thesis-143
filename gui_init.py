@@ -15,6 +15,14 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from PyPDF2 import PdfReader, PdfWriter
 import tempfile
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.applications.vgg16 import VGG16
+import torch
+from transformers import ViTImageProcessor, ViTForImageClassification
 
 original_width, original_height = 1080, 1920
 scale_steps = 50
@@ -60,6 +68,96 @@ class CameraApp:
         
         # showing the result page immediately for testing
         # self.show_result_page()
+        self.weights_path = r""
+
+
+
+    def classify_pneumonia(self):
+        # ✅ DEVICE CONFIGURATION
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # ✅ LOAD ViT MODEL (Fine-Tuning Enabled)
+        vit_model_name = "facebook/dino-vits16"
+        vit_processor = ViTImageProcessor.from_pretrained(vit_model_name)
+        vit_model = ViTForImageClassification.from_pretrained(vit_model_name, num_labels=3).to(device)
+
+        def vit_forward(image_batch):
+            def process_images(images):
+                images = images.numpy()
+                images = (images * 255).astype(np.uint8)
+                inputs = vit_processor(images=images, return_tensors="pt").to(device)
+                outputs = vit_model(**inputs)
+                features = torch.nn.functional.softmax(outputs.logits, dim=1).cpu().detach().numpy()
+                return np.expand_dims(features, axis=-1)
+
+            return tf.py_function(func=process_images, inp=[image_batch], Tout=tf.float32)
+
+        # ✅ LOAD VGG MODEL (Frozen Backbone)
+        vgg_base = VGG16(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
+        vgg_model = Model(inputs=vgg_base.input, outputs=Flatten()(vgg_base.output))
+
+        # ✅ HYBRID MODEL CLASS
+        class HybridModel(Model):
+            def __init__(self, vgg_model, vit_forward, **kwargs):
+                super(HybridModel, self).__init__(**kwargs)
+                self.vgg_model = Model(inputs=vgg_model.input, outputs=vgg_model.output)
+                self.vgg_fc = Dense(512, activation="relu")
+                self.vit_forward = vit_forward
+                self.vit_fc = Dense(512, activation="relu")
+                self.fc = Dense(3, activation="softmax")
+
+            def call(self, inputs, training=False):
+                vgg_features = self.vgg_model(inputs)
+                vgg_features = self.vgg_fc(vgg_features)
+                vit_features = self.vit_forward(inputs)
+                vit_features = tf.reshape(vit_features, (-1, 3))
+                vit_features = self.vit_fc(vit_features)
+                merged_features = (vgg_features + vit_features) / 2
+                return self.fc(merged_features)
+
+        # ✅ RECREATE MODEL
+        hybrid_model = HybridModel(vgg_model, vit_forward)
+
+        # ✅ INITIALIZE MODEL
+        dummy_input = tf.random.normal((1, 224, 224, 3))
+        _ = hybrid_model(dummy_input)
+        hybrid_model.build(input_shape=(None, 224, 224, 3))
+
+        # ✅ LOAD WEIGHTS
+        hybrid_model.load_weights(self.weights_path)
+        print("\n✅ Model loaded successfully!")
+
+        # ✅ DEFINE CLASS LABELS
+        class_labels = {1: "Normal", 0: "Bacterial Pneumonia", 2: "Viral Pneumonia"}
+
+        def preprocess_image(cv_image):
+            img = cv2.resize(cv_image, (224, 224))
+            img_array = np.expand_dims(img, axis=0) / 255.0
+            return img_array
+
+        # ✅ PREDICTION
+        img_array = preprocess_image(self.captured_image)
+        predictions = hybrid_model.predict(img_array)
+        class_probs = predictions[0]
+        class_index = np.argmax(class_probs)
+
+        # Extract confidence levels
+        normal_confidence = class_probs[1]
+        bacterial_confidence = class_probs[0]
+        viral_confidence = class_probs[2]
+
+        print("\n📊 Classification Confidence Levels:")
+        for idx, label in class_labels.items():
+            print(f"   {label}: {class_probs[idx] * 100:.2f}%")
+
+        final_prediction = f"\n✅ Final Prediction: {class_labels[class_index]} with {class_probs[class_index] * 100:.2f}% confidence.\n"
+        print(final_prediction)
+
+        return class_labels[class_index], normal_confidence, bacterial_confidence, viral_confidence
+
+
+
+
 
 
     def create_patient_info_page(self):
@@ -305,16 +403,21 @@ class CameraApp:
     
     def show_result_page(self):
         self.clear_frame()
-        # self.patient_name = self.
-        # self.sex = "M"
-        # self.address = "Cebu City"
-        # self.contact = "09123456789" 
-        # self.age = "25"
-        self.normal_confidence_level = 87
-        self.viral_confidence_level = 13
-        self.bacterial_confidence_level = 0
-        self.priority_level = "Low"
-        self.others_confidence_level = 0
+        
+        # Classify the captured image
+        classification_result, self.normal_confidence, self.bacterial_confidence, self.viral_confidence = self.classify_pneumonia()
+        
+        # Convert confidence levels to percentages
+        self.normal_confidence_level = self.normal_confidence * 100
+        self.viral_confidence_level = self.viral_confidence * 100
+        self.bacterial_confidence_level = self.bacterial_confidence * 100
+
+        # You can define logic to set priority level based on confidence scores
+        self.priority_level = "Low"  # Modify this logic if needed
+        self.others_confidence_level = 100 - (self.normal_confidence_level + self.viral_confidence_level + self.bacterial_confidence_level)
+
+
+
         
         result_title_label = tk.Label(self.root, text="Pneumonia Detection and Classification", font=("Google Sans", 18), bg="#171d29", fg="white")
         result_title_label.place(x=490, y=21)
