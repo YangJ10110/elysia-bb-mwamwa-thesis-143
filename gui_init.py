@@ -112,28 +112,54 @@ class CameraApp:
 
 
         self.done_button = tk.Button(self.root, text="Done", command=self.create_initial_page, bg="#4CAF50", fg="white", font=("Google Sans", 16, "bold"))
-        self.done_button.place(x=765, y=460, width=194, height=82)
+        self.done_button.place(x=805, y=500, width=155, height=82)
     
     def create_keyboard(self):
-        keys = [
+        self.caps_lock = False
+
+        self.capitalized_keys = [
             "1234567890",
             "QWERTYUIOP",
             "ASDFGHJKL",
             "ZXCVBNÑM",
             "._-@"
         ]
-        
-        for row_index, row in enumerate(keys):
+
+        self.non_capitalized_keys = [
+            "1234567890",
+            "qwertyuiop",
+            "asdfghjkl",
+            "zxcvbnñm",
+            "._-@"
+        ]
+
+        self.keys = self.non_capitalized_keys
+
+        self.render_keyboard()
+
+    def render_keyboard(self):
+        for widget in self.keyboard_frame.winfo_children():
+            widget.destroy()
+
+        caps_lock_button = tk.Button(self.keyboard_frame, text="Caps Lock", font=("Google Sans", 12), width=16, height=2, command=self.toggle_caps_lock)
+        caps_lock_button.grid(row=2, column=16, columnspan=6)
+
+        for row_index, row in enumerate(self.keys):
             for col_index, key in enumerate(row):
                 button = tk.Button(self.keyboard_frame, text=key, font=("Google Sans", 12), width=6, height=2,
                                    command=lambda k=key: self.insert_character(k))
                 button.grid(row=row_index, column=col_index)
-                
+
         backspace_button = tk.Button(self.keyboard_frame, text="Backspace", font=("Google Sans", 12), width=16, height=2, command=self.backspace_character)
         backspace_button.grid(row=0, column=16, columnspan=16)
 
         space_button = tk.Button(self.keyboard_frame, text="Space", font=("Google Sans", 12), width=16, height=2, command=lambda: self.insert_character(" "))
         space_button.grid(row=1, column=16, columnspan=16)
+
+    def toggle_caps_lock(self):
+        self.caps_lock = not self.caps_lock
+        self.keys = self.capitalized_keys if self.caps_lock else self.non_capitalized_keys
+        self.render_keyboard()
     
     def backspace_character(self):
         if self.active_entry:
