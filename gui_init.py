@@ -3,6 +3,15 @@ from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import cv2
 
+import os
+import ssl
+import threading
+
+# Use the certifi path for SSL
+os.environ['SSL_CERT_FILE'] = r'C:\Users\CHEXRAY\elysia-bb-mwamwa-thesis-143\chexray_env\Lib\site-packages\certifi\cacert.pem'
+ssl._create_default_https_context = ssl._create_unverified_context
+
+
 from reportlab.pdfgen import canvas
 import smtplib
 import ssl
@@ -24,17 +33,17 @@ from tensorflow.keras.applications.vgg16 import VGG16
 import torch
 from transformers import ViTImageProcessor, ViTForImageClassification
 
-original_width, original_height = 1080, 1920
-scale_steps = 50
-scale_factor = 0.02  # 5% decrease per step
+# original_width, original_height = 1080, 1920
+# scale_steps = 50
+# scale_factor = 0.02  # 5% decrease per step
 
-scaled_sizes = [
-    (int(original_width * (1 - scale_factor * step)), 
-     int(original_height * (1 - scale_factor * step)))
-    for step in range(scale_steps + 1)
-]
+# scaled_sizes = [
+#     (int(original_width * (1 - scale_factor * step)), 
+#      int(original_height * (1 - scale_factor * step)))
+#     for step in range(scale_steps + 1)
+# ]
 
-print(scaled_sizes)
+# print(scaled_sizes)
 
 # 1440
 
@@ -63,15 +72,13 @@ class CameraApp:
         self.priority_level = ""
         self.cap = None
         self.image = None
+        self.weights_path = r"C:\Users\CHEXRAY\elysia-bb-mwamwa-thesis-143\System Model\hybrid_best_model.weights.h5"
+
 
         self.create_patient_info_page()
         
         # showing the result page immediately for testing
         # self.show_result_page()
-        self.weights_path = r""
-
-
-
     def classify_pneumonia(self):
         # DEVICE CONFIGURATION
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -142,10 +149,11 @@ class CameraApp:
         class_index = np.argmax(class_probs)
 
         # Extract confidence levels
-        normal_confidence = class_probs[1]
-        bacterial_confidence = class_probs[0]
-        viral_confidence = class_probs[3]
-        other_confidence = class_probs[2]
+        normal_confidence = f"{class_probs[1] * 100:.2f}"
+        bacterial_confidence = f"{class_probs[0] * 100:.2f}"
+        viral_confidence = f"{class_probs[3] * 100:.2f}"
+        other_confidence = f"{class_probs[2] * 100:.2f}"
+
 
         print("\n📊 Classification Confidence Levels:")
         for idx, label in class_labels.items():
@@ -157,14 +165,11 @@ class CameraApp:
         return class_labels[class_index], normal_confidence, bacterial_confidence, viral_confidence, other_confidence
 
 
-
-
-
-
     def create_patient_info_page(self):
         self.clear_frame()
+        self.close_camera()
 
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button = tk.Button(self.root, text="✕", command=self.root.quit, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
         self.exit_button.place(x=930, y=31, width=24, height=24)
 
         tk.Label(self.root, text="Hello!", font=("Google Sans", 40), bg="#171d29", fg="white").place(x=503, y=40)
@@ -211,54 +216,28 @@ class CameraApp:
 
 
         self.done_button = tk.Button(self.root, text="Done", command=self.create_initial_page, bg="#4CAF50", fg="white", font=("Google Sans", 16, "bold"))
-        self.done_button.place(x=805, y=500, width=155, height=82)
+        self.done_button.place(x=765, y=460, width=194, height=82)
     
     def create_keyboard(self):
-        self.caps_lock = False
-
-        self.capitalized_keys = [
+        keys = [
             "1234567890",
             "QWERTYUIOP",
             "ASDFGHJKL",
             "ZXCVBNÑM",
             "._-@"
         ]
-
-        self.non_capitalized_keys = [
-            "1234567890",
-            "qwertyuiop",
-            "asdfghjkl",
-            "zxcvbnñm",
-            "._-@"
-        ]
-
-        self.keys = self.non_capitalized_keys
-
-        self.render_keyboard()
-
-    def render_keyboard(self):
-        for widget in self.keyboard_frame.winfo_children():
-            widget.destroy()
-
-        caps_lock_button = tk.Button(self.keyboard_frame, text="Caps Lock", font=("Google Sans", 12), width=16, height=2, command=self.toggle_caps_lock)
-        caps_lock_button.grid(row=2, column=16, columnspan=6)
-
-        for row_index, row in enumerate(self.keys):
+        
+        for row_index, row in enumerate(keys):
             for col_index, key in enumerate(row):
                 button = tk.Button(self.keyboard_frame, text=key, font=("Google Sans", 12), width=6, height=2,
                                    command=lambda k=key: self.insert_character(k))
                 button.grid(row=row_index, column=col_index)
-
+                
         backspace_button = tk.Button(self.keyboard_frame, text="Backspace", font=("Google Sans", 12), width=16, height=2, command=self.backspace_character)
         backspace_button.grid(row=0, column=16, columnspan=16)
 
         space_button = tk.Button(self.keyboard_frame, text="Space", font=("Google Sans", 12), width=16, height=2, command=lambda: self.insert_character(" "))
         space_button.grid(row=1, column=16, columnspan=16)
-
-    def toggle_caps_lock(self):
-        self.caps_lock = not self.caps_lock
-        self.keys = self.capitalized_keys if self.caps_lock else self.non_capitalized_keys
-        self.render_keyboard()
     
     def backspace_character(self):
         if self.active_entry:
@@ -356,7 +335,7 @@ class CameraApp:
         
         self.clear_frame()
         
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button = tk.Button(self.root, text="✕", command=self.root.quit, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
         self.exit_button.place(x=1030, y=31, width=24, height=24)
         
         self.camera_label = tk.Label(self.root, width=515, height=600, bg="black", bd=0)
@@ -371,17 +350,34 @@ class CameraApp:
             self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 16, "bold")
         )
         self.upload_button.place(x=550, y=320, width=499, height=62)
+
+            # Start camera thread to reduce boot delay
+        threading.Thread(target=self.initialize_camera, daemon=True).start()
         
-        self.cap = cv2.VideoCapture(1)
+        # self.cap = cv2.VideoCapture(0)
+        # if not self.cap.isOpened():
+        #     print("Error: Unable to access external webcam.")
+        #     self.cap = cv2.VideoCapture(0)
+        # self.update_camera_feed()
+    
+    def initialize_camera(self):
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Use CAP_DSHOW for faster initialization on Windows
+
         if not self.cap.isOpened():
             print("Error: Unable to access external webcam.")
-            self.cap = cv2.VideoCapture(1)
+            return
+        
+        # Set camera resolution early to avoid resizing lag
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
         self.update_camera_feed()
 
     def show_preview_page(self):
         self.clear_frame()
+        self.close_camera()
         
-        self.exit_button = tk.Button(self.root, text="✕", command=self.close_camera, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
+        self.exit_button = tk.Button(self.root, text="✕", command=self.root.quit, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
         self.exit_button.place(x=1030, y=31, width=24, height=24)
         
         image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
@@ -404,20 +400,22 @@ class CameraApp:
     
     def show_result_page(self):
         self.clear_frame()
-        
+        # self.patient_name = self.
+        # self.sex = "M"
+        # self.address = "Cebu City"
+        # self.contact = "09123456789" 
+        # self.age = "25"
         # Classify the captured image
         classification_result, self.normal_confidence, self.bacterial_confidence, self.viral_confidence, self.others_confidence = self.classify_pneumonia()
         
         # Convert confidence levels to percentages
-        self.normal_confidence_level = self.normal_confidence * 100
-        self.viral_confidence_level = self.viral_confidence * 100
-        self.bacterial_confidence_level = self.bacterial_confidence * 100
-        self.others_confidence_level = self.others_confidence * 100
+        self.normal_confidence_level = self.normal_confidence 
+        self.viral_confidence_level = self.viral_confidence
+        self.bacterial_confidence_level = self.bacterial_confidence 
+        self.others_confidence_level = self.others_confidence 
 
         # You can define logic to set priority level based on confidence scores
         self.priority_level = "Low"  # Modify this logic if needed
-
-
         
         result_title_label = tk.Label(self.root, text="Pneumonia Detection and Classification", font=("Google Sans", 18), bg="#171d29", fg="white")
         result_title_label.place(x=490, y=21)
@@ -525,10 +523,11 @@ class CameraApp:
         overlay_canvas.drawString(250, 515, self.address)  # Address
         overlay_canvas.drawString(250, 500, self.contact)  # Contact Number
         # Set screening results
-        overlay_canvas.drawString(250, 190, "Normal")  # Viral
-        overlay_canvas.drawString(250, 170, "Viral")  # Bacterial 
-        overlay_canvas.drawString(250, 150, "Bacterial")  # Others
-        overlay_canvas.drawString(250, 130, "Others")  # Normal (example) 
+
+        overlay_canvas.drawString(250, 190, self.normal_confidence_level)  # Viral
+        overlay_canvas.drawString(250, 170,  self.viral_confidence_level)  # Bacterial 
+        overlay_canvas.drawString(250, 150,  self.bacterial_confidence_level)  # Others
+        overlay_canvas.drawString(250, 130, self.others_confidence_level)  # Normal (example) 
 
         if self.captured_image is not None:
             temp_img = tempfile.NamedTemporaryFile(suffix=".png", delete=False)  # Create a temp image file
@@ -614,7 +613,6 @@ class CameraApp:
     def close_camera(self):
         if self.cap and self.cap.isOpened():
             self.cap.release()
-        self.root.quit()
 
 if __name__ == "__main__":
     root = tk.Tk()
