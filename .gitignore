@@ -1,4 +1,6 @@
 ./build/*
+build/camera_crop/
+
 ./dist/
 ./thesis_env/
 thesis_env/
