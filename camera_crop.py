@@ -201,6 +201,15 @@ class CameraApp:
         self.captured_image = final_cropped
         self.show_result_page()
 
+    def resize_with_aspect_ratio(self, image, target_width):
+        h, w = image.shape[:2]
+        aspect_ratio = h / w
+        new_height = int(target_width * aspect_ratio)
+        return cv2.resize(image, (target_width, new_height))
+
+
+
+
     def update_preview_image(self):
         if self.captured_image is None:
             return
@@ -214,12 +223,16 @@ class CameraApp:
 
         cropped_image = image[self.crop_top:h - crop_bottom, self.crop_left:w - crop_right]
 
+        # Convert to RGB and resize (before converting to ImageTk)
         cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB)
-        cropped_image = cv2.resize(cropped_image, (515, 615))  
+        cropped_image = self.resize_with_aspect_ratio(cropped_image, 515)
+
+        # Convert to Tkinter-compatible image
         cropped_image = ImageTk.PhotoImage(Image.fromarray(cropped_image))
 
         self.image_label.config(image=cropped_image)
         self.image_label.image = cropped_image  # Prevent garbage collection
+
 
 
     def show_preview_page(self):
@@ -254,6 +267,7 @@ class CameraApp:
         self.retake_button = tk.Button(self.root, text="Retake Photo", command=self.create_initial_page, 
                                     bg="#234679", fg="white", font=("Google Sans", 16, "bold"))
         self.retake_button.place(x=550, y=420, width=499, height=62)
+    
 
     def save_image(self):
         if self.captured_image is None:
