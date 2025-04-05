@@ -164,7 +164,7 @@ class CameraApp:
             tk.Label(self.root, text=label, bg="#171d29", fg="white", font=("Google Sans", 16, "bold")).place(x=x_offset, y=y_pos)
 
             # Create slider (Scale) for smooth cropping control (0-50)
-            slider = tk.Scale(self.root, from_=0, to=500, orient="horizontal", length=350,
+            slider = tk.Scale(self.root, from_=0, to=1000, orient="horizontal", length=350,
                             bg="#171d29", fg="white", troughcolor="gray", highlightthickness=0,
                             command=lambda value, d=direction: self.adjust_crop(d, int(value)))
             slider.place(x=x_offset + 100, y=y_pos)
