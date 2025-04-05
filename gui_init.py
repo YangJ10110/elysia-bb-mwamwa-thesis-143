@@ -213,18 +213,18 @@ class CameraApp:
         tk.Label(self.root, text="Age:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=697, y=118)
         tk.Label(self.root, text="Sex:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=870, y=118)
 
-        self.name_entry = tk.Entry(self.root, font=("Google Sans", 20), width=25, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.name_entry = tk.Entry(self.root, font=("Google Sans", 15), width=35, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
         self.name_entry.place(x=172, y=152)
         self.name_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.name_entry))
 
 
-        self.age_entry = tk.Entry(self.root, font=("Google Sans", 20), width=4, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.age_entry = tk.Entry(self.root, font=("Google Sans", 15), width=5, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
         self.age_entry.place(x=697, y=152)
         self.age_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.age_entry))
         self.age = self.age_entry.get() 
         print(self.age)
 
-        self.sex_entry = tk.Entry(self.root, font=("Google Sans", 20), width=4, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.sex_entry = tk.Entry(self.root, font=("Google Sans", 15), width=5, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
         self.sex_entry.place(x=870, y=152)
         self.sex_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.sex_entry))
         self.sex = self.sex_entry.get()
@@ -233,13 +233,13 @@ class CameraApp:
         tk.Label(self.root, text="Address:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=172, y=211)
         tk.Label(self.root, text="Contact Number:", font=("Google Sans", 20), bg="#171d29", fg="white").place(x=695, y=211)
 
-        self.address_entry = tk.Entry(self.root, font=("Google Sans", 20), width=25, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.address_entry = tk.Entry(self.root, font=("Google Sans", 15), width=35, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
         self.address_entry.place(x=172, y=246)
         self.address_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.address_entry))
         self.address = self.address_entry.get()
         print(self.address)
 
-        self.contact_entry = tk.Entry(self.root, font=("Google Sans", 20), width=14, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
+        self.contact_entry = tk.Entry(self.root, font=("Google Sans", 15), width=18, relief="flat", highlightthickness=1, highlightbackground="gray", bd=6)
         self.contact_entry.place(x=697, y=246)
         self.contact_entry.bind("<FocusIn>", lambda event: self.set_active_entry(self.contact_entry))
         self.contact = self.contact_entry.get()
@@ -489,6 +489,12 @@ class CameraApp:
 
         self.update_preview_image()  # Update image in real-time
 
+    def resize_with_aspect_ratio(self, image, target_width):
+        h, w = image.shape[:2]
+        aspect_ratio = h / w
+        new_height = int(target_width * aspect_ratio)
+        return cv2.resize(image, (target_width, new_height))
+
 
     def process_image(self):
         image = self.captured_image.copy()
@@ -514,8 +520,11 @@ class CameraApp:
 
         cropped_image = image[self.crop_top:h - crop_bottom, self.crop_left:w - crop_right]
 
+        # Convert to RGB and resize (before converting to ImageTk)
         cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB)
-        cropped_image = cv2.resize(cropped_image, (515, 615))  
+        cropped_image = self.resize_with_aspect_ratio(cropped_image, 515)
+
+        # Convert to Tkinter-compatible image
         cropped_image = ImageTk.PhotoImage(Image.fromarray(cropped_image))
 
         self.image_label.config(image=cropped_image)
@@ -557,6 +566,12 @@ class CameraApp:
         self.retake_button = tk.Button(self.root, text="Retake Photo", command=self.create_initial_page, 
                                     bg="#234679", fg="white", font=("Google Sans", 16, "bold"))
         self.retake_button.place(x=550, y=420, width=499, height=62)
+
+    def resize_image_keep_aspect(self, img, max_width, max_height):
+        h, w = img.shape[:2]
+        scale = min(max_width / w, max_height / h)
+        new_w, new_h = int(w * scale), int(h * scale)
+        return cv2.resize(img, (new_w, new_h))
 
     
     def show_result_page(self):
@@ -600,9 +615,12 @@ class CameraApp:
         # self.image_label = tk.Label(self.root, image=image, width=515, bg="black", height=600, bd=0)  # Scaled up by 10%
         # self.image_label.image = image
         # self.image_label.place(x=10, y=5)
-        self.result_image_label = tk.Label(self.root, image=resized_image, width=312, bg="black", height=537)
+        self.result_image_label = tk.Label(self.root, image=resized_image, width=400, bg="black", height=537)
         self.result_image_label.image = resized_image
-        self.result_image_label.place(x=70, y=42)
+        self.result_image_label.place(x=5, y=42)
+        resized_image_cv2 = self.resize_image_keep_aspect(self.captured_image, 412, 537)
+        resized_image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(resized_image_cv2, cv2.COLOR_BGR2RGB)))
+        self.result_image_label = tk.Label(self.root, image=resized_image, bg="black")
 
         patient_data = {
             "Patient Name": self.patient_name,
@@ -1367,21 +1385,15 @@ class CameraApp:
         self.back_button.place(x=938, y=530, width=140, height=35)
 
         if self.captured_image is not None:
-            resized_image = cv2.resize(self.captured_image, (400, 537))
-            resized_image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)))
+            resized_image_cv2 = self.resize_image_keep_aspect(self.captured_image, 412, 537)
+            resized_image = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(resized_image_cv2, cv2.COLOR_BGR2RGB)))
         else:
             resized_image = ImageTk.PhotoImage(Image.new('RGB', (216, 288), 'black'))
 
-        # image = cv2.cvtColor(self.captured_image, cv2.COLOR_BGR2RGB)
-        # image = cv2.resize(image, (515, 615))  # Scaled up by 10%
-        # image = ImageTk.PhotoImage(Image.fromarray(image))
-        
-        # self.image_label = tk.Label(self.root, image=image, width=515, bg="black", height=600, bd=0)  # Scaled up by 10%
-        # self.image_label.image = image
-        # self.image_label.place(x=10, y=5)
-        self.result_image_label = tk.Label(self.root, image=resized_image, width=312, bg="black", height=537)
-        self.result_image_label.image = resized_image
-        self.result_image_label.place(x=70, y=42)
+        self.result_image_label = tk.Label(self.root, image=resized_image, bg="black")
+        self.result_image_label.image = resized_image  # Keep a reference
+        self.result_image_label.place(x=5, y=42)
+
 
         patient_data = {
             "Patient Name": self.patient_name,
