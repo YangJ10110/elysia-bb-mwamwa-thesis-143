@@ -28,14 +28,17 @@ import numpy as np
 class CameraApp:
     def __init__(self, root):
         self.root = root
-        self.root.overrideredirect(False)  # Remove title bar
+        self.root.overrideredirect(True)  # Remove title bar
         self.root.geometry("1100x800")  # Set to landscape
         self.root.configure(bg="#171d29")
 
         self.current_frame = None
         self.captured_image = None
         self.filename = None
-        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)  # Initialize here
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Initialize here
+        self.brightness_value = 50  # For live camera feed
+
+
 
         if self.cap.isOpened():
             ret, frame = self.cap.read()
@@ -75,7 +78,7 @@ class CameraApp:
 
 
     def initialize_camera(self):
-        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)  # Use CAP_DSHOW for faster initialization on Windows
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Use CAP_DSHOW for faster initialization on Windows
 
         if not self.cap.isOpened():
             print("Error: Unable to access external webcam.")
@@ -91,32 +94,31 @@ class CameraApp:
         if self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
-                # Rotate frame to portrait orientation
                 frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-                # Apply brightness reduction
-                # frame = self.apply_gamma_correction(frame, gamma=0.5)  # Adjust gamma as needed
-                # frame = reduce_brightness(frame)  # Alternative method
+                # Apply camera brightness adjustment
+                brightness_scale = self.brightness_value / 50.0  # 0 to 2 range
+                frame = np.clip(frame * brightness_scale, 0, 255).astype(np.uint8)
 
-                # Convert frame for display
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = cv2.resize(frame, (515, 615), interpolation=cv2.INTER_LINEAR)
 
-                # Convert frame for tkinter
                 self.current_frame = ImageTk.PhotoImage(Image.fromarray(frame))
-
-                # Ensure the label exists before updating
                 if self.camera_label.winfo_exists():
                     self.camera_label.config(image=self.current_frame)
 
-                # Schedule next frame update
-                self.root.after(10, self.update_camera_feed)
+            self.root.after(10, self.update_camera_feed)
+
+    def update_camera_brightness(self, value):
+        self.brightness_value = int(value)
+
 
     
     def create_initial_page(self):
 
         
         self.clear_frame()
+        self.brightness_value = 50  # Reset brightness value
         
         self.exit_button = tk.Button(self.root, text="✕", command=self.root.quit, fg="red", font=("Comfortaa", 24, "bold"), bd=0, bg="#171d29", activebackground="#171d29", activeforeground="white")
         self.exit_button.place(x=1030, y=31, width=24, height=24)
@@ -133,6 +135,16 @@ class CameraApp:
             self.root, text="Upload", command=self.upload_image, bg="#234679", fg="white", font=("Google Sans", 16, "bold")
         )
         self.upload_button.place(x=550, y=320, width=499, height=62)
+    
+        tk.Label(self.root, text="Live Brightness", bg="#171d29", fg="white", font=("Google Sans", 14)).place(x=550, y=400)
+        self.camera_brightness_slider = tk.Scale(
+            self.root, from_=0, to=500, orient="horizontal", length=499,
+            bg="#171d29", fg="white", troughcolor="gray", highlightthickness=0,
+            command=self.update_camera_brightness
+        )
+        self.camera_brightness_slider.set(self.brightness_value)
+        self.camera_brightness_slider.place(x=550, y=430)
+
 
             # Start camera thread to reduce boot delay
         threading.Thread(target=self.initialize_camera, daemon=True).start()
@@ -201,11 +213,11 @@ class CameraApp:
         self.captured_image = final_cropped
         self.show_result_page()
 
-    def resize_with_aspect_ratio(self, image, target_width):
-        h, w = image.shape[:2]
-        aspect_ratio = h / w
-        new_height = int(target_width * aspect_ratio)
-        return cv2.resize(image, (target_width, new_height))
+    # def resize_with_aspect_ratio(self, image, target_width):
+    #     h, w = image.shape[:2]
+    #     aspect_ratio = h / w
+    #     new_height = int(target_width * aspect_ratio)
+    #     return cv2.resize(image, (target_width, new_height))
 
 
 
@@ -223,16 +235,21 @@ class CameraApp:
 
         cropped_image = image[self.crop_top:h - crop_bottom, self.crop_left:w - crop_right]
 
+        # Apply brightness adjustment
+        brightness_scale = self.brightness_value / 50.0  # Scale from 0 to 2 (1 = original)
+        cropped_image = np.clip(cropped_image * brightness_scale, 0, 255).astype(np.uint8)
+
         # Convert to RGB and resize (before converting to ImageTk)
         cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB)
-        cropped_image = self.resize_with_aspect_ratio(cropped_image, 515)
-
-        # Convert to Tkinter-compatible image
+        cropped_image = cv2.resize(cropped_image, (515, 615))
         cropped_image = ImageTk.PhotoImage(Image.fromarray(cropped_image))
 
         self.image_label.config(image=cropped_image)
         self.image_label.image = cropped_image  # Prevent garbage collection
 
+    def update_brightness(self, value):
+        self.brightness_value = int(value)
+        self.update_preview_image()
 
 
     def show_preview_page(self):
@@ -258,6 +275,12 @@ class CameraApp:
 
         # Crop adjustment buttons
         self.add_crop_controls()
+        tk.Label(self.root, text="Brightness", bg="#171d29", fg="white", font=("Google Sans", 16, "bold")).place(x=550, y=310)
+        self.brightness_slider = tk.Scale(self.root, from_=0, to=500, orient="horizontal", length=350,
+                                        bg="#171d29", fg="white", troughcolor="gray", highlightthickness=0,
+                                        command=self.update_brightness)
+        self.brightness_slider.set(self.brightness_value)  # Set default to middle
+        self.brightness_slider.place(x=670, y=310)
 
         # Buttons for processing and retaking
         self.proceed_button = tk.Button(self.root, text="Save Image", command=self.save_image, 
